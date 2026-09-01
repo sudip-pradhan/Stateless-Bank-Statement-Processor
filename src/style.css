@@ -1,0 +1,112 @@
+body {
+  font-family: system-ui, sans-serif;
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.subtitle {
+  color: #555;
+  margin-top: -0.5rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.dropzone {
+  border: 2px dashed #999;
+  border-radius: 8px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  color: #444;
+  background: #fafafa;
+}
+
+.dropzone:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.dropzone-active {
+  border-color: #2563eb;
+  background: #eef4ff;
+}
+
+.dropzone-hint {
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: 0.25rem;
+}
+
+.banner-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.banner {
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+.banner-warning {
+  background: #fff7e6;
+  border: 1px solid #f0c36d;
+  color: #7a5200;
+}
+
+.banner-error {
+  background: #fdecea;
+  border: 1px solid #f5a3a3;
+  color: #8a1f1f;
+}
+
+.progress-section {
+  margin-top: 1rem;
+}
+
+.progress-track {
+  width: 100%;
+  height: 10px;
+  background: #eee;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #2563eb;
+  transition: width 0.2s ease;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 0.5rem 0 0;
+}
+
+.summary {
+  margin-top: 1rem;
+}
+
+#export-button {
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#export-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
