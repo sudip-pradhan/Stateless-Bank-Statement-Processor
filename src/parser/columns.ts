@@ -4,6 +4,7 @@ const HEADER_ALIASES: Record<Exclude<ColumnKind, 'description'>, RegExp> = {
   date: /^date$/i,
   debit: /^(debit|withdrawal|withdrawals|money out|payments?\/?debits?)$/i,
   credit: /^(credit|deposit|deposits|money in|receipts?\/?credits?)$/i,
+  amount: /^(amount|amt|transaction amount)$/i,
   balance: /^(balance|running balance|ledger balance)$/i,
 };
 

@@ -107,3 +107,44 @@ describe('buildTransactions', () => {
     expect(buildTransactions([], [])).toEqual([]);
   });
 });
+
+// A second statement layout with a single "Amount" column (signed value, plus
+// one row using a trailing CR/DR marker instead of a sign) rather than
+// separate Debit/Credit columns.
+const AMOUNT_COLUMN_PAGE_ITEMS: PositionedText[] = [
+  item('Date', 50, 100),
+  item('Description', 100, 100),
+  item('Amount', 300, 100),
+  item('Balance', 420, 100),
+
+  item('01/02/2024', 50, 80),
+  item('Coffee Shop', 100, 80),
+  item('-4.50', 300, 80),
+  item('995.50', 420, 80),
+
+  item('01/03/2024', 50, 60),
+  item('Payroll Deposit', 100, 60),
+  item('2000.00', 300, 60),
+  item('2995.50', 420, 60),
+
+  item('01/04/2024', 50, 30),
+  item('Grocery Store', 100, 30),
+  item('60.25 DR', 300, 30),
+  item('2935.25', 420, 30),
+];
+
+describe('buildTransactions with a single Amount column', () => {
+  it('derives debit/credit from the amount sign or a CR/DR suffix', () => {
+    const rows = groupTextIntoRows(AMOUNT_COLUMN_PAGE_ITEMS);
+    const header = detectHeaderRow(rows)!;
+    const bands = deriveColumnBands(header.row);
+    const bodyRows = rows.slice(header.rowIndex + 1);
+
+    const transactions = buildTransactions(bodyRows, bands);
+
+    expect(transactions).toHaveLength(3);
+    expect(transactions[0]).toMatchObject({ description: 'Coffee Shop', amount: 4.5, type: 'debit' });
+    expect(transactions[1]).toMatchObject({ description: 'Payroll Deposit', amount: 2000, type: 'credit' });
+    expect(transactions[2]).toMatchObject({ description: 'Grocery Store', amount: 60.25, type: 'debit' });
+  });
+});

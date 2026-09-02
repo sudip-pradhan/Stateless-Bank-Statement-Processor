@@ -7,7 +7,7 @@ export interface PositionedText {
   height: number;
 }
 
-export type ColumnKind = 'date' | 'description' | 'debit' | 'credit' | 'balance';
+export type ColumnKind = 'date' | 'description' | 'debit' | 'credit' | 'amount' | 'balance';
 
 export interface ColumnBand {
   kind: ColumnKind;

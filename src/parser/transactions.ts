@@ -47,6 +47,14 @@ export function buildTransactions(bodyRows: TextRow[], bands: ColumnBand[]): Tra
         case 'credit':
           if (amount !== null) credit = Math.abs(amount);
           break;
+        case 'amount':
+          // Single combined column: sign (or a CR/DR suffix, handled in parseAmount)
+          // distinguishes a credit from a debit.
+          if (amount !== null) {
+            if (amount < 0) debit = Math.abs(amount);
+            else credit = amount;
+          }
+          break;
         case 'balance':
           if (amount !== null) balance = amount;
           break;
