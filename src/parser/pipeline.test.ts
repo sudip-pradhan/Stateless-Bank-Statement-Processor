@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { detectHeaderRow, deriveColumnBands } from './columns';
+import { buildNarrationTransactions } from './narrationRows';
 import { groupTextIntoRows } from './rows';
 import { buildTransactions } from './transactions';
-import type { PositionedText } from './types';
+import type { PositionedText, TextRow } from './types';
 
 /** Builds a synthetic positioned-text item, mimicking pdf.js's bottom-left-origin coordinates. */
 function item(str: string, x: number, y: number): PositionedText {
@@ -182,5 +183,58 @@ describe('buildTransactions with a single Amount column', () => {
     expect(transactions).toHaveLength(2);
     expect(transactions[0]).toMatchObject({ description: 'Coffee Shop', amount: 60.25, type: 'debit' });
     expect(transactions[1]).toMatchObject({ description: 'Payroll Deposit', amount: 2000, type: 'credit' });
+  });
+});
+
+// Some real-world exports (seen from SBI account statements) have no
+// per-page header at all: the header only appears once on a summary page
+// and is lost on the per-transaction pages produced when the statement is
+// split/merged. Each transaction instead renders as a label line (e.g.
+// "WDL TFR") followed by a data line with two leading dates and trailing
+// ref/withdrawal/deposit/balance fields, then further narration lines.
+function textRow(...tokens: string[]): TextRow {
+  return { y: 0, items: tokens.map((str) => ({ str, x: 0, y: 0, width: 0, height: 0 })) };
+}
+
+describe('buildNarrationTransactions (headerless value-date/txn-date row layout)', () => {
+  it('parses withdrawal and deposit rows, stitching narration from surrounding lines', () => {
+    const rows: TextRow[] = [
+      textRow('WDL TFR'),
+      textRow('', '02/01/2025', ' ', '02/01/2025', ' ', '-', ' ', '30,000.00', ' ', '-', ' ', '40,173.78'),
+      textRow('UPI/DR/575004230157/SRI DURG/HDFC/9701622429/Paym'),
+      textRow('0097694162092 AT 03478'),
+      textRow('SANGAREDDY'),
+      textRow('DEP TFR'),
+      textRow('03/01/2025', ' ', '03/01/2025', ' ', '-', ' ', '-', ' ', '2,500.00', ' ', '42,472.78'),
+      textRow('UPI/CR/974502117974/LYAGALA /HDFC/lnraju570@/Paym'),
+      textRow('SANGAREDDY'),
+      textRow('Page no.', '', '2'),
+    ];
+
+    const transactions = buildNarrationTransactions(rows);
+
+    expect(transactions).toHaveLength(2);
+    expect(transactions[0]).toMatchObject({
+      date: '02/01/2025',
+      amount: 30000,
+      type: 'debit',
+      balance: 40173.78,
+    });
+    expect(transactions[0].description).toContain('WDL TFR');
+    expect(transactions[0].description).toContain('SRI DURG');
+
+    expect(transactions[1]).toMatchObject({
+      date: '03/01/2025',
+      amount: 2500,
+      type: 'credit',
+      balance: 42472.78,
+    });
+    expect(transactions[1].description).not.toContain('Page no.');
+  });
+
+  it('returns an empty array when no row has the two-leading-dates shape', () => {
+    expect(buildNarrationTransactions([textRow('Account Summary'), textRow('Branch Code', ':', '3478')])).toEqual(
+      [],
+    );
   });
 });

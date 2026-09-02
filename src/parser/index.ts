@@ -1,4 +1,5 @@
 import { detectHeaderRow, deriveColumnBands } from './columns';
+import { buildNarrationTransactions } from './narrationRows';
 import { extractPdfPages } from './pdf';
 import { groupTextIntoRows } from './rows';
 import { buildTransactions } from './transactions';
@@ -34,7 +35,14 @@ export async function parseStatementPdfDetailed(file: ArrayBuffer): Promise<Pars
 
     const rows = groupTextIntoRows(pageItems);
     const header = detectHeaderRow(rows);
-    if (!header) continue; // page has no transaction table (cover page, disclosures, etc.)
+    if (!header) {
+      // No labeled header on this page — some statements (e.g. multi-page
+      // exports split per-transaction) only carry the header once, on a
+      // summary page, and lose it on subsequent pages. Fall back to
+      // detecting the value-date/txn-date/amount row shape directly.
+      transactions.push(...buildNarrationTransactions(rows));
+      continue;
+    }
 
     const bands = deriveColumnBands(header.row);
     const bodyRows = rows.slice(header.rowIndex + 1);
