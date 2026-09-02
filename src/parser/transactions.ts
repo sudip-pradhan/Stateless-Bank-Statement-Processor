@@ -34,29 +34,25 @@ export function buildTransactions(bodyRows: TextRow[], bands: ColumnBand[]): Tra
     let credit: number | null = null;
     let balance: number | null = null;
 
+    // Group items by column first, rather than parsing each item in isolation.
+    // A single cell's value is often split across multiple positioned text
+    // runs by the PDF (e.g. "60.25" and "DR" rendered with a gap between
+    // them land as two separate items); parsing them independently would
+    // read "60.25" as a bare positive number and silently drop the lone
+    // "DR" marker instead of combining them into "60.25 DR".
+    const cellText: Partial<Record<'debit' | 'credit' | 'amount' | 'balance', string[]>> = {};
+
     for (const item of row.items) {
       const text = item.str.trim();
       if (!text) continue;
       const kind = columnForX(bands, item.x);
-      const amount = parseAmount(text);
 
       switch (kind) {
         case 'debit':
-          if (amount !== null) debit = Math.abs(amount);
-          break;
         case 'credit':
-          if (amount !== null) credit = Math.abs(amount);
-          break;
         case 'amount':
-          // Single combined column: sign (or a CR/DR suffix, handled in parseAmount)
-          // distinguishes a credit from a debit.
-          if (amount !== null) {
-            if (amount < 0) debit = Math.abs(amount);
-            else credit = amount;
-          }
-          break;
         case 'balance':
-          if (amount !== null) balance = amount;
+          (cellText[kind] ??= []).push(text);
           break;
         case 'date':
           break;
@@ -67,6 +63,27 @@ export function buildTransactions(bodyRows: TextRow[], bands: ColumnBand[]): Tra
           }
           break;
       }
+    }
+
+    const debitAmount = cellText.debit ? parseAmount(cellText.debit.join(' ')) : null;
+    if (debitAmount !== null) debit = Math.abs(debitAmount);
+
+    const creditAmount = cellText.credit ? parseAmount(cellText.credit.join(' ')) : null;
+    if (creditAmount !== null) credit = Math.abs(creditAmount);
+
+    if (cellText.amount) {
+      // Single combined column: sign (or a CR/DR suffix, handled in parseAmount)
+      // distinguishes a credit from a debit.
+      const amount = parseAmount(cellText.amount.join(' '));
+      if (amount !== null) {
+        if (amount < 0) debit = Math.abs(amount);
+        else credit = amount;
+      }
+    }
+
+    if (cellText.balance) {
+      const balanceAmount = parseAmount(cellText.balance.join(' '));
+      if (balanceAmount !== null) balance = balanceAmount;
     }
 
     let description = descriptionParts.join(' ').replace(/\s+/g, ' ').trim();

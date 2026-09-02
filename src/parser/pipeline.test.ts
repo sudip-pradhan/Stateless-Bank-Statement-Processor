@@ -147,4 +147,40 @@ describe('buildTransactions with a single Amount column', () => {
     expect(transactions[1]).toMatchObject({ description: 'Payroll Deposit', amount: 2000, type: 'credit' });
     expect(transactions[2]).toMatchObject({ description: 'Grocery Store', amount: 60.25, type: 'debit' });
   });
+
+  // Real PDFs render the value and its CR/DR marker as separate glyph runs
+  // whenever there's a rendering gap between them, so pdf.js reports them as
+  // two distinct positioned-text items in the same column (rather than one
+  // pre-joined "60.25 DR" string, as in the fixture above).
+  it('combines a value and its CR/DR marker when the PDF reports them as separate text items', () => {
+    const items: PositionedText[] = [
+      item('Date', 50, 100),
+      item('Description', 100, 100),
+      item('Amount', 300, 100),
+      item('Balance', 420, 100),
+
+      item('01/02/2024', 50, 80),
+      item('Coffee Shop', 100, 80),
+      item('60.25', 300, 80),
+      item('DR', 330, 80), // still inside the amount column band, separate item
+      item('995.50', 420, 80),
+
+      item('01/03/2024', 50, 60),
+      item('Payroll Deposit', 100, 60),
+      item('2,000.00', 300, 60),
+      item('CR', 335, 60),
+      item('2995.50', 420, 60),
+    ];
+
+    const rows = groupTextIntoRows(items);
+    const header = detectHeaderRow(rows)!;
+    const bands = deriveColumnBands(header.row);
+    const bodyRows = rows.slice(header.rowIndex + 1);
+
+    const transactions = buildTransactions(bodyRows, bands);
+
+    expect(transactions).toHaveLength(2);
+    expect(transactions[0]).toMatchObject({ description: 'Coffee Shop', amount: 60.25, type: 'debit' });
+    expect(transactions[1]).toMatchObject({ description: 'Payroll Deposit', amount: 2000, type: 'credit' });
+  });
 });
